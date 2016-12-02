@@ -135,7 +135,7 @@ apiRoutes.put('/users/:username/contacts/:contact', function(req, res) {
             User.findOne({ username: req.params.contact}, function(err, contact) {
                 if(err) throw err;
                 if(contact) {
-                    contactIds = contacts.map(function(x){
+                    contactIds = user.contacts.map(function(x){
                         return x._id;
                     });
                     if(contactIds.indexOf(contact._id) == -1) {
