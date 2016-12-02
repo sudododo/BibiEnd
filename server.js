@@ -23,22 +23,31 @@ apiRoutes.post('/signup', function(req, res){
     if(!req.body.username || !req.body.password || !req.body.name || !req.body.email) {
         return res.status(400).send({sucess: false, message: 'Invalid input'});
     } else {
-        var newUser = new User();
-        newUser.username = req.body.username;
-        newUser.password = req.body.password;
-        newUser.name = req.body.name;
-        newUser.email = req.body.email;
-        newUser.admin = false;
-        newUser.save(function(err) {
-            if(err) throw err;
-        });
-        var token = jwt.sign({ username: newUser.username}, app.get('superSecret'), {
-            expiresIn: app.get('expiresIn')
-        });
-        res.json({
-            sucess: true,
-            message: 'Complete',
-            token: token
+        User.findOne({username: req.body.username}, function(err, user) {
+            if(user) {
+                return res.status(400).send({
+                    sucess: false,
+                    message: 'User already exisits.'
+                })
+            } else {
+                var newUser = new User();
+                newUser.username = req.body.username;
+                newUser.password = req.body.password;
+                newUser.name = req.body.name;
+                newUser.email = req.body.email;
+                newUser.admin = false;
+                newUser.save(function(err) {
+                    if(err) throw err;
+                });
+                var token = jwt.sign({ username: newUser.username}, app.get('superSecret'), {
+                    expiresIn: app.get('expiresIn')
+                });
+                res.json({
+                    sucess: true,
+                    message: 'Complete',
+                    token: token
+                });
+            }
         })
     }
 });
@@ -70,34 +79,68 @@ apiRoutes.post('/authenticate', function(req, res){
     });
 });
 
-apiRoutes.use(function(req, res, next) {
-    var token = req.body.token || req.query.token || req.headers['x-access-token'];
-    if(token) {
-        jwt.verify(token, app.get('superSecret'), function(err, decoded) {
-            if(err) {
-                return res.status(401).send({sucess: false, message: 'Failed to authenticate token.'});
-            } else {
-                req.decoded = decoded;
-                next();
-            }
-        });
-    } else {
-        return res.status(403).send({
-            sucess: false,
-            message: 'No token provided.'
-        });
-    }
-});
+// apiRoutes.use(function(req, res, next) {
+//     var token = req.body.token || req.query.token || req.headers['x-access-token'];
+//     if(token) {
+//         jwt.verify(token, app.get('superSecret'), function(err, decoded) {
+//             if(err) {
+//                 return res.status(401).send({sucess: false, message: 'Failed to authenticate token.'});
+//             } else {
+//                 req.decoded = decoded;
+//                 next();
+//             }
+//         });
+//     } else {
+//         return res.status(403).send({
+//             sucess: false,
+//             message: 'No token provided.'
+//         });
+//     }
+// });
 
 apiRoutes.get('/', function(req, res) {
     res.send("Welcome to BibiEnd");
 });
 
-apiRoutes.get('/users', function(req, res){
-    User.find({}, function(error, users){
-        res.json(users);
+// apiRoutes.get('/users', function(req, res){
+//     User.find({}, function(error, users){
+//         res.json(users);
+//     });
+// });
+
+apiRoutes.get('/users/:username', function(req, res) {
+    User.findOne({ username: req.params.username}, function(err, user) {
+        if(user) {
+            user = user.toObject();
+            delete user.password;
+            delete user.__V;
+            res.json(JSON.stringify(user));
+        } else {
+            return res.status(400).json({
+                sucess: false,
+                message: 'User not Found.'
+            });
+        }
     });
 });
+
+apiRoutes.get('/users/:username/contacts', function(req, res) {
+    User.findOne({username: req.params.username}, 'contacts', function(err, user){
+        if(err){
+            throw err;
+        } else {
+            if(user) {
+                res.json(JOSN.stringify(user.contacts));
+            } else {
+                res.status(400).json({
+                    sucess: false,
+                    message: 'User not found'
+                });
+            }
+        }
+    });
+});
+
 
 app.use('/api', apiRoutes);
 
