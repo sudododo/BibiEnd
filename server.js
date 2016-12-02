@@ -165,7 +165,7 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
             throw err;
         } else {
             if(user) {
-                contacts = user.contacts;
+                contacts = user.contacts.toObject();
                 if(contacts) {
                     console.log("size: ");
                     contacts.forEach(function(x){
