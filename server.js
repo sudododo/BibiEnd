@@ -167,7 +167,7 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
             if(user) {
                 contacts = user.contacts.toObject();
                 if(contacts) {
-                    contacts.map(function(x){
+                    contactsAbstract = contacts.map(function(x){
                         console.log(x);
                         x = x.toObject();
                         delete x.password;
@@ -176,9 +176,9 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
                         console.log(x);
                         return x;
                     });
-                    res.json(contacts);
+                    res.json(contactsAbstract);
                 } else {
-                    res.json(contacts);
+                    res.json('[]');
                 }
             } else {
                 res.status(400).json({
