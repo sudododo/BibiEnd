@@ -11,7 +11,7 @@ var port = process.env.PORT || 8080;
 mongoose.connect(config.database);
 app.set('superSecret', config.secret);
 
-app.use(bodyParser.urlencoded({extended: false}));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.use(morgan('dev'));
@@ -19,15 +19,15 @@ app.use(morgan('dev'));
 var apiRoutes = express.Router();
 
 // signup
-apiRoutes.post('/signup', function(req, res){
-    if(!req.body.username || !req.body.password || !req.body.name || !req.body.email) {
-        return res.status(400).send({sucess: false, message: 'Invalid input'});
+apiRoutes.post('/signup', function (req, res) {
+    if (!req.body.username || !req.body.password || !req.body.name || !req.body.email) {
+        return res.status(400).send({ sucess: false, message: 'Invalid input' });
     } else {
-        User.findOne({username: req.body.username}, function(err, user) {
-            if(user) {
+        User.findOne({ username: req.body.username }, function (err, user) {
+            if (user) {
                 return res.status(400).send({
                     sucess: false,
-                    message: 'User already exisits.'
+                    message: 'Username already exisits.'
                 })
             } else {
                 var newUser = new User();
@@ -36,15 +36,16 @@ apiRoutes.post('/signup', function(req, res){
                 newUser.name = req.body.name;
                 newUser.email = req.body.email;
                 newUser.admin = false;
-                newUser.save(function(err) {
-                    if(err) throw err;
+                newUser.save(function (err) {
+                    if (err) throw err;
                 });
-                var token = jwt.sign({ username: newUser.username}, app.get('superSecret'), {
+                var token = jwt.sign({ _id: newUser._id, username: newUser.username }, app.get('superSecret'), {
                     expiresIn: app.get('expiresIn')
                 });
                 res.json({
                     sucess: true,
                     message: 'Complete',
+                    _id: newUser._id,
                     token: token
                 });
             }
@@ -53,25 +54,26 @@ apiRoutes.post('/signup', function(req, res){
 });
 
 // login
-apiRoutes.post('/authenticate', function(req, res){
+apiRoutes.post('/authenticate', function (req, res) {
     User.findOne({
         username: req.body.username
-    }, function(err, user) {
-        if(err) throw err;
+    }, function (err, user) {
+        if (err) throw err;
 
-        if(!user) {
-            res.json({ success: false, message: 'Authenticate failed. User not found.'});
-        } else if(user) {
-            if(user.password != req.body.password) {
-                res.json({ sucess: false, message: 'Authenticate failed. Wrong password.'});
+        if (!user) {
+            res.json({ success: false, message: 'Authenticate failed. User not found.' });
+        } else if (user) {
+            if (user.password != req.body.password) {
+                res.json({ sucess: false, message: 'Authenticate failed. Wrong password.' });
             } else {
-                var token = jwt.sign({ username: user.username }, app.get('superSecret'), {
+                var token = jwt.sign({ _id: user._id, username: user.username }, app.get('superSecret'), {
                     expiresIn: app.get('expiresIn')
                 });
 
                 res.json({
                     sucess: true,
                     message: 'Authenticated',
+                    _id: user._id,
                     token: token
                 });
             }
@@ -99,7 +101,7 @@ apiRoutes.post('/authenticate', function(req, res){
 // });
 
 // Test
-apiRoutes.get('/', function(req, res) {
+apiRoutes.get('/', function (req, res) {
     res.send("Welcome to BibiEnd");
 });
 
@@ -110,13 +112,32 @@ apiRoutes.get('/', function(req, res) {
 //     });
 // });
 
-// Get user
-apiRoutes.get('/users/:username', function(req, res) {
-    User.findOne({ username: req.params.username}, function(err, user) {
-        if(user) {
+// Get user by id
+apiRoutes.get('/users/:id', function (req, res) {
+    User.findOne({ _id: req.params.id }, function (err, user) {
+        if (user) {
             user = user.toObject();
             delete user.password;
             delete user.__v;
+            delete user.contacts;
+            res.json(user);
+        } else {
+            return res.status(400).json({
+                sucess: false,
+                message: 'User not Found.'
+            });
+        }
+    });
+});
+
+// Get user by username
+apiRoutes.get('/users/:username', function (req, res) {
+    User.findOne({ username: req.params.username }, function (err, user) {
+        if (user) {
+            user = user.toObject();
+            delete user.password;
+            delete user.__v;
+            delete user.contacts;
             res.json(user);
         } else {
             return res.status(400).json({
@@ -128,16 +149,14 @@ apiRoutes.get('/users/:username', function(req, res) {
 });
 
 // Add contact
-apiRoutes.put('/users/:username/contacts/:contact', function(req, res) {
-    User.findOne({ username: req.params.username}, function(err, user) {
-        if(err) throw err;
-        if(user) {
-            User.findOne({ username: req.params.contact}, function(err, contact) {
-                if(err) throw err;
-                if(contact) {
-                    console.info(user.contacts);
-                    console.info(contact._id);
-                    if(user.contacts.indexOf(contact._id) == -1) {
+apiRoutes.put('/users/:userid/contacts/:contactid', function (req, res) {
+    User.findOne({ _id: req.params.userid }, function (err, user) {
+        if (err) throw err;
+        if (user) {
+            User.findOne({ _id: req.params.contactid }, function (err, contact) {
+                if (err) throw err;
+                if (contact) {
+                    if (user.contacts.indexOf(contact._id) == -1) {
                         user.contacts.push(contact._id);
                         user.save();
                         res.json({
@@ -167,38 +186,64 @@ apiRoutes.put('/users/:username/contacts/:contact', function(req, res) {
 });
 
 // Get contacts
-apiRoutes.get('/users/:username/contacts', function(req, res) {
-    User.findOne({username: req.params.username})
+apiRoutes.get('/users/:id/contacts', function (req, res) {
+    User.findOne({ _id: req.params.id })
         .populate('contacts')
-        .exec(function(err, user){
-        if(err){
-            throw err;
-        } else {
-            if(user) {
-                contacts = user.contacts.toObject();
-                if(contacts) {
-                    contactsAbstract = contacts.map(function(x){
-                        x = x.toObject();
-                        delete x.password;
-                        delete x.__v;
-                        delete x.contacts;
-                        return x;
-                    });
-                    res.json(contactsAbstract);
-                } else {
-                    res.json('[]');
-                }
+        .exec(function (err, user) {
+            if (err) {
+                throw err;
             } else {
+                if (user) {
+                    contacts = user.contacts.toObject();
+                    if (contacts) {
+                        contactsAbstract = contacts.map(function (x) {
+                            x = x.toObject();
+                            delete x.password;
+                            delete x.__v;
+                            delete x.contacts;
+                            return x;
+                        });
+                        res.json(contactsAbstract);
+                    } else {
+                        res.json('[]');
+                    }
+                } else {
+                    res.status(400).json({
+                        sucess: false,
+                        message: 'User not found'
+                    });
+                }
+            }
+        });
+});
+
+// remove a contacts
+apiRoutes.delete('/users/:userid/contacts/:contactid', function (req, res) {
+    User.findOne({ _id: req.params.userid }, function (err, user) {
+        if (err) throw err;
+        if (user) {
+            index = user.contacts.indexOf(contactid);
+            if (index == -1) {
                 res.status(400).json({
                     sucess: false,
-                    message: 'User not found'
+                    message: 'Contact cannot be found.'
+                });
+            } else {
+                user.contacts.splice(index, 1);
+                user.save();
+                res.json({
+                    sucess: false,
+                    message: 'Contact already exists.'
                 });
             }
+        } else {
+            res.status(400).json({
+                sucess: false,
+                message: 'User cannot be found.'
+            })
         }
     });
 });
-
-// TODO remove a contacts
 
 // TODO remove a user
 
