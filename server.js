@@ -113,7 +113,7 @@ apiRoutes.get('/', function (req, res) {
 // });
 
 // Get user by id
-apiRoutes.get('/users/:id', function (req, res) {
+apiRoutes.get('/users/id/:id', function (req, res) {
     User.findOne({ _id: req.params.id }, function (err, user) {
         if (user) {
             user = user.toObject();
@@ -131,7 +131,7 @@ apiRoutes.get('/users/:id', function (req, res) {
 });
 
 // Get user by username
-apiRoutes.get('/users/:username', function (req, res) {
+apiRoutes.get('/users/username/:username', function (req, res) {
     User.findOne({ username: req.params.username }, function (err, user) {
         if (user) {
             user = user.toObject();
