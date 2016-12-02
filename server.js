@@ -90,7 +90,7 @@ apiRoutes.use(function(req, res, next) {
 });
 
 apiRoutes.get('/', function(req, res) {
-    res.send("Welcome to BibiEnd")
+    res.send("Welcome to BibiEnd");
 });
 
 apiRoutes.get('/users', function(req, res){
