@@ -291,7 +291,7 @@ apiRoutes.post('/groups', function (req, res) {
     }
 });
 
-app.use('/api' + app.get('version'), apiRoutes);
+app.use('/api/' + app.get('version'), apiRoutes);
 
 app.listen(port);
 console.log('Server running on port ' + port);
