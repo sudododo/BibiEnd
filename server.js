@@ -176,8 +176,10 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
                         console.log(x);
                         return x;
                     });
+                    res.json(contacts);
+                } else {
+                    res.json(contacts);
                 }
-                res.json(contacts);
             } else {
                 res.status(400).json({
                     sucess: false,
