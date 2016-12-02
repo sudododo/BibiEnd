@@ -113,7 +113,7 @@ apiRoutes.get('/users/:username', function(req, res) {
         if(user) {
             user = user.toObject();
             delete user.password;
-            delete user.__V;
+            delete user.__v;
             res.json(user);
         } else {
             return res.status(400).json({
@@ -124,13 +124,53 @@ apiRoutes.get('/users/:username', function(req, res) {
     });
 });
 
+apiRoutes.put('/users/:username/contacts/:contact', function(req, res) {
+    User.findOne({ username: req.params.username}, function(err, user) {
+        if(err) throw err;
+        if(user) {
+            User.findOne({ username: req.params.contact}, function(err, contact) {
+                if(err) throw err;
+                if(contact) {
+                    user.contacts.push(contact._id);
+                    user.save();
+                    res.json({
+                        sucess: true,
+                        message: 'Contact added.'
+                    });
+                } else {
+                    res.status(400).json({
+                        sucess: false,
+                        message: 'Contact cannot be found.'
+                    })
+                }
+            });
+        } else {
+            res.status(400).json({
+                sucess: false,
+                message: 'User cannot be found.'
+            })
+        }
+    });
+});
+
 apiRoutes.get('/users/:username/contacts', function(req, res) {
-    User.findOne({username: req.params.username}, 'contacts', function(err, user){
+    User.findOne({username: req.params.username})
+        .select('contacts')
+        .populate('contacts')
+        .exec(function(err, user){
         if(err){
             throw err;
         } else {
             if(user) {
-                res.json(JOSN.stringify(user.contacts));
+                contacts = user.contacts;
+                if(contacts) {
+                    contacts.forEach(function(x){
+                        delete x.password;
+                        delete x.__v;
+                        delete x.contacts;
+                    })
+                }
+                res.json(user.contacts);
             } else {
                 res.status(400).json({
                     sucess: false,
