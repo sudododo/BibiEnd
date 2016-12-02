@@ -114,7 +114,7 @@ apiRoutes.get('/users/:username', function(req, res) {
             user = user.toObject();
             delete user.password;
             delete user.__V;
-            res.json(JSON.stringify(user));
+            res.json(user);
         } else {
             return res.status(400).json({
                 sucess: false,
