@@ -18,7 +18,7 @@ app.use(morgan('dev'));
 
 var apiRoutes = express.Router();
 
-// register
+// signup
 apiRoutes.post('/signup', function(req, res){
     if(!req.body.username || !req.body.password || !req.body.name || !req.body.email) {
         return res.status(400).send({sucess: false, message: 'Invalid input'});
@@ -98,6 +98,7 @@ apiRoutes.post('/authenticate', function(req, res){
 //     }
 // });
 
+// Test
 apiRoutes.get('/', function(req, res) {
     res.send("Welcome to BibiEnd");
 });
@@ -108,6 +109,7 @@ apiRoutes.get('/', function(req, res) {
 //     });
 // });
 
+// Get user
 apiRoutes.get('/users/:username', function(req, res) {
     User.findOne({ username: req.params.username}, function(err, user) {
         if(user) {
@@ -124,6 +126,7 @@ apiRoutes.get('/users/:username', function(req, res) {
     });
 });
 
+// Add contact
 apiRoutes.put('/users/:username/contacts/:contact', function(req, res) {
     User.findOne({ username: req.params.username}, function(err, user) {
         if(err) throw err;
@@ -153,9 +156,9 @@ apiRoutes.put('/users/:username/contacts/:contact', function(req, res) {
     });
 });
 
+// Get contacts
 apiRoutes.get('/users/:username/contacts', function(req, res) {
     User.findOne({username: req.params.username})
-        .select('contacts')
         .populate('contacts')
         .exec(function(err, user){
         if(err){
@@ -181,6 +184,11 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
     });
 });
 
+// TODO remove a contacts
+
+// TODO remove a user
+
+// 
 
 app.use('/api', apiRoutes);
 
