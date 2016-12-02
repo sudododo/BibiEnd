@@ -167,11 +167,12 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
             if(user) {
                 contacts = user.contacts;
                 if(contacts) {
+                    console.log("size: ");
                     contacts.forEach(function(x){
                         delete x.password;
                         delete x.__v;
                         delete x.contacts;
-                    })
+                    });
                 }
                 res.json(contacts);
             } else {
