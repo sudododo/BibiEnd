@@ -168,12 +168,13 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
                 contacts = user.contacts.toObject();
                 if(contacts) {
                     console.log("size: ");
-                    contacts.forEach(function(x){
+                    contacts.map(function(x){
                         console.log(x);
                         x = x.toObject();
                         delete x.password;
                         delete x.__v;
                         delete x.contacts;
+                        return x;
                     });
                 }
                 res.json(contacts);
