@@ -170,6 +170,7 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
                     console.log("size: ");
                     contacts.forEach(function(x){
                         console.log(x);
+                        x = x.toObject();
                         delete x.password;
                         delete x.__v;
                         delete x.contacts;
