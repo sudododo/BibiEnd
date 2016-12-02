@@ -222,7 +222,7 @@ apiRoutes.delete('/users/:userid/contacts/:contactid', function (req, res) {
     User.findOne({ _id: req.params.userid }, function (err, user) {
         if (err) throw err;
         if (user) {
-            index = user.contacts.indexOf(contactid);
+            index = user.contacts.indexOf(req.params.contactid);
             if (index == -1) {
                 res.status(400).json({
                     sucess: false,
