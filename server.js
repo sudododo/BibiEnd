@@ -170,7 +170,7 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
                         delete x.contacts;
                     })
                 }
-                res.json(user.contacts);
+                res.json(contacts);
             } else {
                 res.status(400).json({
                     sucess: false,
