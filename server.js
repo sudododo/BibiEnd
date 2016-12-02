@@ -138,6 +138,8 @@ apiRoutes.put('/users/:username/contacts/:contact', function(req, res) {
                     contactIds = user.contacts.map(function(x){
                         return x._id;
                     });
+                    console.info(contactIds);
+                    console.info(contact._id);
                     if(contactIds.indexOf(contact._id) == -1) {
                         user.contacts.push(contact._id);
                         user.save();
