@@ -264,11 +264,11 @@ apiRoutes.post('/groups', function (req, res) {
                     message: 'Groupname already exisits.'
                 });
             } else {
-                User.findOne({ username: req.body.username }, function (err, user) {
+                User.findOne({ _id: req.body.userid }, function (err, user) {
                     if (!user) {
                         return res.status(400).send({
                             sucess: false,
-                            message: 'Username does not exist.'
+                            message: 'User does not exist.'
                         });
                     } else {
                         var newGroup = new Group();
