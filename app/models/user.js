@@ -9,5 +9,8 @@ module.exports = mongoose.model('User', new Schema({
     desc: String,
     avatar: String,
     admin: Boolean,
-    contacts: [{type: Schema.Types.ObjectId, ref: 'User'}]
+    contacts: [{type: Schema.Types.ObjectId, ref: 'User'}],
+    createdBy: {type: Schema.Types.ObjectId, ref: 'User'},
+    createdAt: Date,
+    updatedAt: Date
 }));

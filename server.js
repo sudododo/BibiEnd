@@ -6,10 +6,14 @@ var mongoose = require('mongoose');
 var jwt = require('jsonwebtoken');
 var config = require('./config');
 var User = require('./app/models/user');
+var Group = require('./app/models/group');
+
+app.set('superSecret', config.secret);
+app.set('expiresIn', config.expiresIn);
+app.set('version', config.version);
 
 var port = process.env.PORT || 8080;
 mongoose.connect(config.database);
-app.set('superSecret', config.secret);
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
@@ -232,8 +236,8 @@ apiRoutes.delete('/users/:userid/contacts/:contactid', function (req, res) {
                 user.contacts.splice(index, 1);
                 user.save();
                 res.json({
-                    sucess: false,
-                    message: 'Contact already exists.'
+                    sucess: true,
+                    message: 'Deleted.'
                 });
             }
         } else {
@@ -247,9 +251,47 @@ apiRoutes.delete('/users/:userid/contacts/:contactid', function (req, res) {
 
 // TODO remove a user
 
-// 
 
-app.use('/api', apiRoutes);
+// Create a group
+apiRoutes.post('/groups', function (req, res) {
+    if (!req.body.groupname || !req.body.name || !req.body.userid) {
+        return res.status(400).send({ sucess: false, message: 'Invalid input' });
+    } else {
+        Group.findOne({ groupname: req.body.groupname }, function (err, group) {
+            if (group) {
+                return res.status(400).send({
+                    sucess: false,
+                    message: 'Groupname already exisits.'
+                });
+            } else {
+                User.findOne({ username: req.body.username }, function (err, user) {
+                    if (!user) {
+                        return res.status(400).send({
+                            sucess: false,
+                            message: 'Username does not exist.'
+                        });
+                    } else {
+                        var newGroup = new Group();
+                        newGroup.groupname = req.body.groupname;
+                        newGroup.name = req.body.name;
+                        newGroup.createdBy = user._id;
+                        newGroup.members.push(user._id);
+                        newGroup.save(function (err) {
+                            if (err) throw err;
+                        });
+                        res.json({
+                            sucess: true,
+                            message: 'Complete',
+                            _id: newGroup._id
+                        });
+                    }
+                });
+            }
+        });
+    }
+});
+
+app.use('/api' + app.get('version'), apiRoutes);
 
 app.listen(port);
 console.log('Server running on port ' + port);
