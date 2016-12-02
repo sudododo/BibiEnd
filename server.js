@@ -103,6 +103,7 @@ apiRoutes.get('/', function(req, res) {
     res.send("Welcome to BibiEnd");
 });
 
+// Get all users
 // apiRoutes.get('/users', function(req, res){
 //     User.find({}, function(error, users){
 //         res.json(users);
@@ -134,12 +135,19 @@ apiRoutes.put('/users/:username/contacts/:contact', function(req, res) {
             User.findOne({ username: req.params.contact}, function(err, contact) {
                 if(err) throw err;
                 if(contact) {
-                    user.contacts.push(contact._id);
-                    user.save();
-                    res.json({
-                        sucess: true,
-                        message: 'Contact added.'
-                    });
+                    if(!user.contacts.indexOf(contact._id)) {
+                        user.contacts.push(contact._id);
+                        user.save();
+                        res.json({
+                            sucess: true,
+                            message: 'Contact added.'
+                        });
+                    } else {
+                        res.status(400).json({
+                            sucess: false,
+                            message: 'Contact already exists.'
+                        });
+                    }
                 } else {
                     res.status(400).json({
                         sucess: false,
@@ -168,12 +176,10 @@ apiRoutes.get('/users/:username/contacts', function(req, res) {
                 contacts = user.contacts.toObject();
                 if(contacts) {
                     contactsAbstract = contacts.map(function(x){
-                        console.log(x);
                         x = x.toObject();
                         delete x.password;
                         delete x.__v;
                         delete x.contacts;
-                        console.log(x);
                         return x;
                     });
                     res.json(contactsAbstract);
