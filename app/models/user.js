@@ -10,7 +10,6 @@ module.exports = mongoose.model('User', new Schema({
     avatar: String,
     admin: Boolean,
     contacts: [{type: Schema.Types.ObjectId, ref: 'User'}],
-    createdBy: {type: Schema.Types.ObjectId, ref: 'User'},
-    createdAt: Date,
-    updatedAt: Date
+    createdAt: {type: Date, default: Date.now},
+    updatedAt: {type: Date, default: Date.now}
 }));

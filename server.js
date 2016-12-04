@@ -291,6 +291,29 @@ apiRoutes.post('/groups', function (req, res) {
     }
 });
 
+// TODO Get a group by id
+apiRoutes.get('/groups/:id', function (req, res) {
+    Group.findOne({ _id: req.params.id }, function (err, group) {
+        if (!group) {
+            return res.status(400).send({
+                sucess: false,
+                message: 'Group cannot be found.'
+            });
+        } else {
+            res.json(user);
+        }
+    });
+});
+
+// TODO update a group
+
+// TODO add user to a group
+
+// TODO remove a user from a group
+
+// TODO remove a group
+
+
 app.use('/api/' + app.get('version'), apiRoutes);
 
 app.listen(port);
