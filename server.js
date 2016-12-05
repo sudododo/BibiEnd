@@ -67,20 +67,22 @@ apiRoutes.post('/authenticate', function (req, res) {
         if (!user) {
             res.json({ success: false, message: 'Authenticate failed. User not found.' });
         } else if (user) {
-            if (user.password != req.body.password) {
-                res.json({ sucess: false, message: 'Authenticate failed. Wrong password.' });
-            } else {
-                var token = jwt.sign({ _id: user._id, username: user.username }, app.get('superSecret'), {
-                    expiresIn: app.get('expiresIn')
-                });
-
-                res.json({
-                    sucess: true,
-                    message: 'Authenticated',
-                    _id: user._id,
-                    token: token
-                });
-            }
+            user.comparePassword(req.body.password, function (err, isMatch) {
+                if (err) throw err;
+                if (isMatch) {
+                    var token = jwt.sign({ _id: user._id, username: user.username }, app.get('superSecret'), {
+                        expiresIn: app.get('expiresIn')
+                    });
+                    res.json({
+                        sucess: true,
+                        message: 'Authenticated',
+                        _id: user._id,
+                        token: token
+                    });
+                } else {
+                    res.status(400).json({ sucess: false, message: 'Authenticate failed. Wrong password.' });
+                }
+            });
         }
     });
 });
@@ -124,6 +126,7 @@ apiRoutes.get('/users/id/:id', function (req, res) {
             delete user.password;
             delete user.__v;
             delete user.contacts;
+            delete user.groups;
             res.json(user);
         } else {
             return res.status(400).json({
@@ -142,6 +145,7 @@ apiRoutes.get('/users/username/:username', function (req, res) {
             delete user.password;
             delete user.__v;
             delete user.contacts;
+            delete user.groups;
             res.json(user);
         } else {
             return res.status(400).json({
@@ -162,7 +166,8 @@ apiRoutes.put('/users/:userid/contacts/:contactid', function (req, res) {
                 if (contact) {
                     if (user.contacts.indexOf(contact._id) == -1) {
                         user.contacts.push(contact._id);
-                        user.save();
+                        user.updateAt =
+                            user.save();
                         res.json({
                             sucess: true,
                             message: 'Contact added.'
@@ -205,6 +210,7 @@ apiRoutes.get('/users/:id/contacts', function (req, res) {
                             delete x.password;
                             delete x.__v;
                             delete x.contacts;
+                            delete x.groups;
                             return x;
                         });
                         res.json(contactsAbstract);
@@ -221,7 +227,7 @@ apiRoutes.get('/users/:id/contacts', function (req, res) {
         });
 });
 
-// remove a contacts
+// remove a contact
 apiRoutes.delete('/users/:userid/contacts/:contactid', function (req, res) {
     User.findOne({ _id: req.params.userid }, function (err, user) {
         if (err) throw err;
@@ -249,7 +255,57 @@ apiRoutes.delete('/users/:userid/contacts/:contactid', function (req, res) {
     });
 });
 
-// TODO remove a user
+// Remove a user
+apiRoutes.delete('/users/id/:id', function (req, res) {
+    User.findOne({ _id: req.params.id }, function (err, user) {
+        if (err) throw err;
+        if (user) {
+            user.isActive = false;
+            user.save(function (err) {
+                if (err) throw err;
+            });
+            res.json({
+                sucess: true,
+                message: 'Complete',
+                _id: user._id
+            });
+        } else {
+            return res.status(400).send({
+                sucess: false,
+                message: 'User does not exist.'
+            });
+        }
+    });
+});
+
+// Update a user
+apiRoutes.put('/users/id/:id', function (req, res) {
+    if (!req.body.username || !req.body.password || !req.body.name || !req.body.email) {
+        return res.status(400).send({ sucess: false, message: 'Invalid input' });
+    } else {
+        User.findOne({ _id: req.params.id }, function (err, user) {
+            if (!user) {
+                return res.status(400).send({
+                    sucess: false,
+                    message: 'Username does not exisit.'
+                })
+            } else {
+                user.username = req.body.username;
+                user.password = req.body.password;
+                user.name = req.body.name;
+                user.email = req.body.email;
+                user.admin = false;
+                user.save(function (err) {
+                    if (err) throw err;
+                });
+                res.json({
+                    sucess: true,
+                    message: 'Complete'
+                });
+            }
+        })
+    }
+});
 
 
 // Create a group
@@ -271,12 +327,17 @@ apiRoutes.post('/groups', function (req, res) {
                             message: 'User does not exist.'
                         });
                     } else {
-                        var newGroup = new Group();
-                        newGroup.groupname = req.body.groupname;
-                        newGroup.name = req.body.name;
-                        newGroup.createdBy = user._id;
-                        newGroup.members.push(user._id);
+                        var newGroup = new Group({
+                            groupname: req.body.groupname,
+                            name: req.body.name,
+                            createdBy: user._id,
+                            members: [user._id]
+                        });
                         newGroup.save(function (err) {
+                            if (err) throw err;
+                        });
+                        user.groups.push(newGroup._id);
+                        user.save(function (err) {
                             if (err) throw err;
                         });
                         res.json({
@@ -291,7 +352,7 @@ apiRoutes.post('/groups', function (req, res) {
     }
 });
 
-// TODO Get a group by id
+// Get a group by id
 apiRoutes.get('/groups/:id', function (req, res) {
     Group.findOne({ _id: req.params.id }, function (err, group) {
         if (!group) {
@@ -300,18 +361,144 @@ apiRoutes.get('/groups/:id', function (req, res) {
                 message: 'Group cannot be found.'
             });
         } else {
-            res.json(user);
+            res.json(group);
         }
     });
 });
 
-// TODO update a group
+// Update a group by id
+apiRoutes.put('/groups/:id', function (req, res) {
+    if (!req.body.groupname || !req.body.name) {
+        return res.status(400).send({ sucess: false, message: 'Invalid input' });
+    } else {
+        Group.findOne({ _id: req.params.id }, function (err, group) {
+            if (group) {
+                group.groupname = req.body.groupname;
+                group.name = req.body.name;
+                group.save(function (err) {
+                    if (err) throw err;
+                });
+                res.json({
+                    sucess: true,
+                    message: 'Complete',
+                    _id: group._id
+                });
+            } else {
+                return res.status(400).send({
+                    sucess: false,
+                    message: 'Gourp does not exist.'
+                });
+            }
+        });
+    }
+});
 
-// TODO add user to a group
 
-// TODO remove a user from a group
+// Add a member to a group
+apiRoutes.put('/groups/:groupid/members/:memberid', function (req, res) {
+    Group.findOne({ _id: req.params.groupid }, function (err, group) {
+        if (err) throw err;
+        if (group) {
+            User.findOne({ _id: req.params.memberid }, function (err, member) {
+                if (err) throw err;
+                if (member) {
+                    if (group.members.indexOf(member._id) == -1) {
+                        group.members.push(member._id);
+                        group.save(function (err) {
+                            if (err) throw err;
+                        });
+                        member.groups.push(group._id);
+                        member.save(function (err) {
+                            if (err) throw err;
+                        });
+                        res.json({
+                            sucess: true,
+                            message: 'Member added.'
+                        });
+                    } else {
+                        res.status(400).json({
+                            sucess: false,
+                            message: 'Member already exists.'
+                        });
+                    }
+                } else {
+                    res.status(400).json({
+                        sucess: false,
+                        message: 'Member cannot be found.'
+                    })
+                }
+            });
+        } else {
+            res.status(400).json({
+                sucess: false,
+                message: 'Group cannot be found.'
+            })
+        }
+    });
+});
 
-// TODO remove a group
+// Remove a user from a group
+apiRoutes.delete('/groups/:groupid/members/:memberid', function (req, res) {
+    Group.findOne({ _id: req.params.groupid }, function (err, group) {
+        if (err) throw err;
+        if (group) {
+            index = group.members.indexOf(req.params.memberid);
+            if (index == -1) {
+                res.status(400).json({
+                    sucess: false,
+                    message: 'Member cannot be found.'
+                });
+            } else {
+                group.members.splice(index, 1);
+                group.save(function (err) {
+                    if (err) throw err;
+                });
+                User.findOne({ _id: req.params.memberid }, function (err, member) {
+                    if (err) throw err;
+                    if (member) {
+                        index2 = member.groups.indexOf(group._id);
+                        member.groups.splice(index2, 1);
+                        member.save(function (err) {
+                            if (err) throw err;
+                        });
+                    }
+                });
+                res.json({
+                    sucess: true,
+                    message: 'Deleted.'
+                });
+            }
+        } else {
+            res.status(400).json({
+                sucess: false,
+                message: 'Group cannot be found.'
+            })
+        }
+    });
+});
+
+// Remove a group
+apiRoutes.delete('/groups/:id', function (req, res) {
+    Group.findOne({ _id: req.params.id }, function (err, group) {
+        if (err) throw err;
+        if (group) {
+            group.isActive = false;
+            group.save(function (err) {
+                if (err) throw err;
+            });
+            res.json({
+                sucess: true,
+                message: 'Complete',
+                _id: group._id
+            });
+        } else {
+            return res.status(400).send({
+                sucess: false,
+                message: 'Group does not exist.'
+            });
+        }
+    });
+});
 
 
 app.use('/api/' + app.get('version'), apiRoutes);

@@ -1,0 +1,22 @@
+User:
+
+Register:                   POST /signup                    username/password/name/email
+Login:                      POST /authenticate              username/password
+Retrieve user by id:        GET /users/id/:id
+Retrieve user by username:  GET /users/username/:username
+Add a contact:              PUT/users/:userid/contacts/:contactid
+Get all contacts:           GET /users/:id/contacts
+Remove a contact:           DELETE /users/:userid/contacts/:contactid
+Remove a user:              DELETE /users/id/:id
+Update a user by id:        PUT /users/id/:id
+
+
+
+Group:
+
+Create a group:                 POST /groups                groupname/name/userid
+Get a group by id:              GET /groups/:id
+Update a group by id:           PUT /groups/:id             groupname/name
+Add a member to a group:        PUT /groups/:groupid/members/:memberid
+Remove a memeber from a group:  DELETE /groups/:groupid/members/:memberid
+Remove a group:                 DELETE /groups/:id

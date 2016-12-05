@@ -1,7 +1,9 @@
-var mongoose = require('mongoose');
-var Schema = mongoose.Schema;
+var mongoose = require('mongoose'),
+    Schema = mongoose.Schema,
+    bcrypt = require('bcrypt'),
+    SALT_WORK_FACTOR = 10;
 
-module.exports = mongoose.model('User', new Schema({
+var UserSchema = new Schema({
     username: String,
     password: String,
     name: String,
@@ -10,6 +12,30 @@ module.exports = mongoose.model('User', new Schema({
     avatar: String,
     admin: Boolean,
     contacts: [{type: Schema.Types.ObjectId, ref: 'User'}],
-    createdAt: {type: Date, default: Date.now},
-    updatedAt: {type: Date, default: Date.now}
-}));
+    groups: [{type: Schema.Types.ObjectId, ref: 'Group'}],
+    isActive: {type: Boolean, default: true}
+},{
+    timestamps: true
+});
+
+UserSchema.pre('save', function(next) {
+    var user = this;
+    if(!user.isModified('password')) return next();
+    bcrypt.genSalt(SALT_WORK_FACTOR, function(err, salt) {
+        if(err) return next(err);
+        bcrypt.hash(user.password, salt, function(err, hash) {
+            if(err) return next(err);
+            user.password = hash;
+            next();
+        });
+    });
+});
+
+UserSchema.methods.comparePassword = function(candidatePassword, cb) {
+    bcrypt.compare(candidatePassword, this.password, function(err, isMatch) {
+        if(err) return cb(err);
+        cb(null, isMatch);
+    });
+};
+
+module.exports = mongoose.model('User', UserSchema);

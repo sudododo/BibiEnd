@@ -7,7 +7,8 @@ module.exports = mongoose.model('Group', new Schema({
     desc: String,
     avatar: String,
     members: [{type: Schema.Types.ObjectId, ref: 'User'}],
-    createdBy: {type: Schema.Types.ObjectId, ref: 'User'},
-    createdAt: {type: Date, default: Date.now},
-    updatedAt: {type: Date, default: Date.now}
+    isActive: {type: Boolean, default: true},
+    createdBy: {type: Schema.Types.ObjectId, ref: 'User'}
+},{
+    timestamps: true
 }));
