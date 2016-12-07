@@ -213,9 +213,9 @@ apiRoutes.get('/users/:id/contacts', function (req, res) {
                             delete x.groups;
                             return x;
                         });
-                        res.json(contactsAbstract);
+                        res.json({contacts:contactsAbstract});
                     } else {
-                        res.json('[]');
+                        res.json({contacts:[]});
                     }
                 } else {
                     res.status(400).json({
