@@ -77,6 +77,9 @@ apiRoutes.post('/authenticate', function (req, res) {
                         sucess: true,
                         message: 'Authenticated',
                         _id: user._id,
+                        username: user.username,
+                        name: user.name,
+                        email: user.email,
                         token: token
                     });
                 } else {
